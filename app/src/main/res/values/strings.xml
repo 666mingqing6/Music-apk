@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HeoMusic</string>
+    <string name="channel_name">音乐播放</string>
+    <string name="channel_desc">保持音乐在后台持续播放，显示播放控制</string>
+    <string name="notif_idle">准备播放</string>
+    <string name="notif_playing">正在后台播放</string>
+    <string name="act_prev">上一首</string>
+    <string name="act_play">播放</string>
+    <string name="act_pause">暂停</string>
+    <string name="act_next">下一首</string>
+    <string name="act_stop">停止</string>
+    <string name="keepalive_title">开启后台持续播放</string>
+    <string name="keepalive_msg">为确保锁屏、切到后台或长时间播放时音乐不中断，请完成以下授权：\n\n1. 允许通知权限（常驻播放通知）\n2. 关闭本应用的电池优化\n3. 在厂商设置中开启自启动 / 后台运行 / 锁定任务\n\n这些授权都需要你在系统页面中手动开启。</string>
+    <string name="keepalive_go">去授权</string>
+    <string name="keepalive_later">稍后</string>
+</resources>

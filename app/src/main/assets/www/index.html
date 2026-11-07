@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MQ Music - 沉浸式音乐体验</title>
+    <link rel="icon" type="image/webp" href="./img/icon.webp">
+    <link rel="apple-touch-icon" href="./img/icon-r.webp">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./css/all.min.css">
+    <link rel="stylesheet" href="./css/modern.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 动态背景层 -->
+        <div id="bg-layer">
+            <div id="bg-cover"></div>
+            <div id="bg-overlay"></div>
+        </div>
+
+        <!-- 主容器 -->
+        <main id="player">
+            <!-- 左侧：封面 + 控制区 -->
+            <section id="player-main">
+                <!-- 封面区域 -->
+                <div id="cover-section">
+                    <div id="cover-container">
+                        <div id="cover-glow"></div>
+                        <img id="cover-art" src="./img/cover.webp" alt="Album Cover" referrerpolicy="no-referrer">
+                        <div id="cover-reflection"></div>
+                    </div>
+                </div>
+
+                <!-- 歌曲信息 -->
+                <div id="track-info">
+                    <h1 id="track-title">加载中...</h1>
+                    <p id="track-artist">请稍候</p>
+                </div>
+
+                <!-- 进度条 -->
+                <div id="progress-section">
+                    <div id="progress-bar">
+                        <div id="progress-buffer"></div>
+                        <div id="progress-fill"></div>
+                        <input type="range" id="progress-slider" min="0" max="100" value="0" step="0.1">
+                    </div>
+                    <div id="time-display">
+                        <span id="time-current">0:00</span>
+                        <span id="time-total">0:00</span>
+                    </div>
+                </div>
+
+                <!-- 主控制按钮 -->
+                <div id="controls-main">
+                    <button id="btn-mode" class="control-btn active" title="随机播放">
+                        <!-- 三种模式图标（Tabler 线条风格，与音量图标一致），JS 按当前模式切换显示 -->
+                        <svg id="mode-icon-loop" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                            <!-- 顺序播放：→ 竖线（播完一轮，主流播放器认知） -->
+                            <path d="M4 12h14"/>
+                            <path d="M15 15l3-3-3-3"/>
+                            <path d="M20 5v14"/>
+                        </svg>
+                        <svg id="mode-icon-shuffle" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- 随机播放：交叉双箭头 -->
+                            <path d="M3 7h3c3 0 4 2 5.5 3.5l2 2C15 14 16 16 19 16h1"/>
+                            <path d="M3 17h3c3 0 4-2 5.5-3.5l2-2C15 10 16 8 19 8h1"/>
+                            <path d="M18 5l3 3-3 3"/>
+                            <path d="M18 13l3 3-3 3"/>
+                        </svg>
+                        <svg id="mode-icon-repeat-one" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                            <!-- 单曲循环：循环双箭头 + 中间"1"（区别于列表循环） -->
+                            <path d="M4 12v-3a3 3 0 0 1 3-3h13"/>
+                            <path d="M17 3l3 3-3 3"/>
+                            <path d="M20 12v3a3 3 0 0 1-3 3H4"/>
+                            <path d="M7 21l-3-3 3-3"/>
+                            <path d="M11.5 10.5l1.5-1v5"/>
+                        </svg>
+                    </button>
+                    <button id="btn-prev" class="control-btn" title="上一曲">
+                        <i class="fas fa-backward-step"></i>
+                    </button>
+                    <button id="btn-play" class="control-btn play-btn" title="播放">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button id="btn-next" class="control-btn" title="下一曲">
+                        <i class="fas fa-forward-step"></i>
+                    </button>
+                    <div id="volume-control" class="control-btn-wrap">
+                        <button id="btn-volume" class="control-btn" title="音量">
+                            <svg id="volume-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- 喇叭本体（Tabler volume，所有状态共用） -->
+                                <path d="M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z"/>
+                                <!-- 三层声波：同心圆弧逐层外扩（最外层凸点 x=22，均在画布内） -->
+                                <path class="volume-wave wave-1" d="M13.5 9.5a3.5 3.5 0 0 1 0 5"/>
+                                <path class="volume-wave wave-2" d="M15.5 7a6 6 0 0 1 0 10"/>
+                                <path class="volume-wave wave-3" d="M17.5 4.5a8.5 8.5 0 0 1 0 15"/>
+                                <!-- 静音叉（Tabler volume-3 的 X，位于声波区域，不与喇叭重叠） -->
+                                <path class="volume-mute-x" d="M16 10l4 4m0-4l-4 4"/>
+                            </svg>
+                        </button>
+                        <div id="volume-slider-wrap">
+                            <input type="range" id="volume-slider" min="0" max="100" value="80">
+                            <div id="volume-fill"></div>
+                        </div>
+                    </div>
+                    <div id="effect-control" class="control-btn-wrap">
+                        <button id="btn-effect" class="control-btn" title="音效">
+                            <i class="fas fa-sliders"></i>
+                        </button>
+                        <div id="effect-popup">
+                            <div class="effect-popup-title">音效</div>
+                            <div class="effect-list">
+                                <button class="effect-item active" data-effect="none">
+                                    <span class="effect-name">关闭</span>
+                                    <span class="effect-desc">原声输出</span>
+                                </button>
+                                <button class="effect-item" data-effect="3d-surround">
+                                    <span class="effect-name">3D环绕</span>
+                                    <span class="effect-desc">立体声旋转混响</span>
+                                </button>
+                                <button class="effect-item" data-effect="immersive">
+                                    <span class="effect-name">沉浸</span>
+                                    <span class="effect-desc">深度空间混响</span>
+                                </button>
+                                <button class="effect-item" data-effect="live">
+                                    <span class="effect-name">现场感</span>
+                                    <span class="effect-desc">现场厅堂感</span>
+                                </button>
+                                <button class="effect-item" data-effect="echo">
+                                    <span class="effect-name">迷幻</span>
+                                    <span class="effect-desc">延迟回声</span>
+                                </button>
+                                <button class="effect-item" data-effect="pop">
+                                    <span class="effect-name">流行</span>
+                                    <span class="effect-desc">均衡器优化</span>
+                                </button>
+                                <button class="effect-item" data-effect="bass-boost">
+                                    <span class="effect-name">重低音</span>
+                                    <span class="effect-desc">低频增强</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="user-control" class="control-btn-wrap">
+                        <button id="btn-user" class="control-btn" title="账户">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <div id="user-popup">
+                            <div class="user-popup-title">账户</div>
+                            <div id="user-login-form">
+                                <div class="user-tabs">
+                                    <button type="button" id="tab-user-login" class="user-tab active">登录</button>
+                                    <button type="button" id="tab-user-register" class="user-tab">注册</button>
+                                </div>
+                                <input type="text" id="user-name-input" placeholder="用户名" autocomplete="username">
+                                <input type="password" id="user-pass-input" placeholder="密码（至少 6 位）" autocomplete="current-password">
+                                <button type="button" id="btn-user-submit" class="user-submit-btn">登录</button>
+                                <div id="user-form-msg" class="user-form-msg"></div>
+                                <div class="user-form-hint">登录后播放记录云端同步，换浏览器不丢失</div>
+                            </div>
+                            <div id="user-logged" style="display:none">
+                                <div class="user-logged-name-row">
+                                    <i class="fas fa-circle-check"></i>
+                                    <span id="user-name-display"></span>
+                                </div>
+                                <div id="user-sync-info" class="user-form-msg"></div>
+                                <div class="user-form-btns">
+                                    <button id="btn-sync-now">立即同步</button>
+                                    <button id="btn-logout">退出登录</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：歌词/播放列表面板 -->
+            <section id="player-panel">
+                <!-- 面板切换标签 -->
+                <div id="panel-tabs">
+                    <button class="panel-tab active" data-panel="lyrics">
+                        <i class="fa-regular fa-file-lines"></i>
+                        <span>歌词</span>
+                    </button>
+                    <button class="panel-tab" data-panel="queue">
+                        <i class="fas fa-list"></i>
+                        <span>列表</span>
+                    </button>
+                    <button class="panel-tab" data-panel="search">
+                        <i class="fas fa-globe"></i>
+                        <span>搜索</span>
+                    </button>
+                </div>
+
+                <!-- 歌词面板 -->
+                <div id="panel-lyrics" class="panel-content active">
+                    <div id="lyrics-scroll">
+                        <div id="lyrics-container">
+                            <p class="lyric-placeholder">正在加载歌词...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 播放列表面板 -->
+                <div id="panel-queue" class="panel-content">
+                    <div id="queue-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="queue-search-input" placeholder="搜索歌曲...">
+                    </div>
+                    <div id="queue-header">
+                        <span id="queue-count">0 首歌曲</span>
+                    </div>
+                    <div id="queue-list"></div>
+                </div>
+
+                <!-- 在线搜索面板 -->
+                <div id="panel-search" class="panel-content">
+                    <div id="search-input-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="输入歌名/歌手搜索...">
+                    </div>
+                    <div id="search-hint">输入关键词后按回车搜索</div>
+                    <div id="search-loading" style="display:none">
+                        <i class="fas fa-spinner fa-spin"></i> 搜索中...
+                    </div>
+                    <div id="search-results"></div>
+                </div>
+                <!-- 桌面端版权提示 -->
+                <div id="footer-credit">
+                    <a href="https://github.com/666mingqing6/Music" target="_blank" rel="noopener">
+                        <i class="fab fa-github"></i> 明轻
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <!-- 移动端：版权提示 -->
+        <div id="footer-credit-mobile">
+            <a href="https://github.com/666mingqing6/Music" target="_blank" rel="noopener">
+                <i class="fab fa-github"></i> 明轻
+            </a>
+        </div>
+
+        <!-- 移动端：底部导航 -->
+        <nav id="mobile-nav">
+            <button class="nav-btn active" data-view="player">
+                <i class="fas fa-compact-disc"></i>
+                <span>播放</span>
+            </button>
+            <button class="nav-btn" data-view="lyrics">
+                <i class="fa-regular fa-file-lines"></i>
+                <span>歌词</span>
+            </button>
+            <button class="nav-btn" data-view="queue">
+                <i class="fas fa-list"></i>
+                <span>列表</span>
+            </button>
+            <button class="nav-btn" data-view="search">
+                <i class="fas fa-globe"></i>
+                <span>搜索</span>
+            </button>
+        </nav>
+
+        <!-- 移动端：全屏歌词视图 -->
+        <div id="mobile-lyrics-view">
+            <div id="mobile-lyrics-header">
+                <button id="btn-close-lyrics">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div id="mobile-track-info">
+                    <span id="mobile-track-title">歌曲名</span>
+                    <span id="mobile-track-artist">歌手</span>
+                </div>
+            </div>
+            <div id="mobile-lyrics-scroll">
+                <div id="mobile-lyrics-container"></div>
+            </div>
+            <div id="mobile-lyrics-controls">
+                <button id="mobile-btn-prev"><i class="fas fa-backward-step"></i></button>
+                <button id="mobile-btn-play"><i class="fas fa-play"></i></button>
+                <button id="mobile-btn-next"><i class="fas fa-forward-step"></i></button>
+            </div>
+        </div>
+
+        <!-- 移动端：在线搜索抽屉 -->
+        <div id="mobile-search-drawer">
+            <div id="mobile-search-header">
+                <span>在线搜索</span>
+                <button id="btn-close-search">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div id="mobile-search-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="mobile-search-input" placeholder="输入歌名/歌手搜索...">
+            </div>
+            <div id="mobile-search-hint">输入关键词后按回车搜索</div>
+            <div id="mobile-search-loading" style="display:none">
+                <i class="fas fa-spinner fa-spin"></i> 搜索中...
+            </div>
+            <div id="mobile-search-results"></div>
+        </div>
+
+        <!-- 移动端：播放列表抽屉 -->
+        <div id="mobile-queue-drawer">
+            <div id="mobile-queue-header">
+                <span>播放列表</span>
+                <button id="btn-close-queue">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div id="mobile-queue-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="mobile-queue-search-input" placeholder="搜索歌曲...">
+            </div>
+            <div id="mobile-queue-list"></div>
+        </div>
+
+        <!-- 音频元素 -->
+        <audio id="audio-player" preload="auto"></audio>
+
+        <!-- 加载遮罩 -->
+        <div id="loading-overlay">
+            <div class="loader">
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./bridge.js"></script>
+    <script src="./config.js"></script>
+    <script>
+        // 加载遮罩兜底：正常流程下由 player.js 在歌单/首曲/封面就绪后揭开；
+        // 仅当 player.js 加载失败或初始化异常（10 秒仍未就绪）时强制隐藏，避免永远转圈
+        setTimeout(function() {
+            if (!(window.player && window.player._revealed)) {
+                var overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.classList.add('hidden');
+            }
+        }, 10000);
+    </script>
+    <script src="./js/playstats.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/player.js"></script>
+    <script src="./native-patch.js"></script>
+</body>
+</html>
